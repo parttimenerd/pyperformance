@@ -25,3 +25,59 @@ pyperformance is not tuned for PyPy yet: use the `PyPy benchmarks project
 performances.
 
 pyperformance is distributed under the MIT license.
+
+
+Modifications in this fork
+--------------------------
+This fork is modified to compare the performance of debugging via
+``sys.settrace`` and ``sys.monitoring``. The debugger implementation is
+minimal without any breakpoints, so it checks the basic performance
+running a application under a debugger.
+
+The used debugger mode is configured via the ``DEBUGGER_MODE`` environment
+variable.
+
+For ``sys.settrace`` (``DEBUGGER_MODE=t``), it adds the following code
+to the beginning of the benchmark runner::
+
+    import sys
+    def inner_handler(*args):
+        pass
+
+
+    def handler(*args):
+        return inner_handler
+
+    sys.settrace(handler)
+
+
+For ``sys.monitoring`` (``DEBUGGER_MODE=m``), it adds
+to the beginning of the benchmark runner::
+
+    import sys
+    mon = sys.monitoring
+    E = mon.events
+    TOOL_ID = mon.DEBUGGER_ID
+
+    def line_handler(*args):
+        pass
+
+    def start_handler(*args):
+        pass
+
+
+    # register the tool
+    mon.use_tool_id(TOOL_ID, "dbg")
+    # register callbacks for the events we are interested in
+    mon.register_callback(TOOL_ID, E.LINE, line_handler)
+    mon.register_callback(TOOL_ID, E.PY_START, start_handler)
+    # enable PY_START event globally
+    mon.set_events(TOOL_ID, E.PY_START)
+
+This might not always work (e.g. "2to3" benchmark), so compare
+the results with the baseline (``DEBUGGER_MODE=``) to check if
+the debugger is enabled.
+
+Run all benchmarks via::
+
+    python3 dev.py run -o none.json; DEBUGGER_MODE="t" python3 dev.py run -o settrace.json; DEBUGGER_MODE="m" python3 dev.py run -o monitoring.json

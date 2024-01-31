@@ -1,8 +1,11 @@
+import os
 from collections import namedtuple
 import hashlib
 import sys
 import time
 import traceback
+from pathlib import Path
+from types import CodeType
 
 import pyperformance
 from . import _utils, _python, _pythoninfo
@@ -142,6 +145,59 @@ def run_benchmarks(should_run, python, options):
             errors.append(name)
             continue
         try:
+            """ we take bench.runscript, copy it to a new file in the same folder
+            and prepend it with code that sets up sys.settrace or sys.monitoring
+            depending on the DEBUGGER_MODE="m", "t", or "" for none.
+            """
+            new_script_file = Path(bench.runscript).parent / "bench.py"
+            with open(bench.runscript, "r") as f:
+                script = f.read()
+                debugger_mode = os.environ.get("DEBUGGER_MODE", "")
+                if debugger_mode == "m":
+                    script = f"""
+import sys
+mon = sys.monitoring
+E = mon.events
+TOOL_ID = mon.DEBUGGER_ID
+
+def line_handler(*args):
+    pass
+
+def start_handler(*args):
+    pass
+
+
+# register the tool
+mon.use_tool_id(TOOL_ID, "dbg")
+# register callbacks for the events we are interested in
+mon.register_callback(TOOL_ID, E.LINE, line_handler)
+mon.register_callback(TOOL_ID, E.PY_START, start_handler)
+# enable PY_START event globally
+mon.set_events(TOOL_ID, E.PY_START)
+
+{script}
+"""
+                elif debugger_mode == "t":
+                    script = f"""
+import sys
+def inner_handler(*args):
+    pass
+
+
+def handler(*args):
+    return inner_handler
+
+sys.settrace(handler)
+{script}
+"""
+                elif debugger_mode == "":
+                    pass
+                else:
+                    raise BenchmarkException(f"invalid debugger mode {debugger_mode}")
+            with open(new_script_file, "w") as f:
+                f.write(script)
+            bench._metadata['runscript'] = str(new_script_file)
+            print(f"running {bench.runscript}")
             result = bench.run(
                 bench_venv.python,
                 bench_runid,
