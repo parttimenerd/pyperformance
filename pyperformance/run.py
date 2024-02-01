@@ -155,6 +155,7 @@ def run_benchmarks(should_run, python, options):
                 debugger_mode = os.environ.get("DEBUGGER_MODE", "")
                 if debugger_mode == "m":
                     script = f"""
+from __future__ import annotations
 import sys
 mon = sys.monitoring
 E = mon.events
@@ -179,6 +180,7 @@ mon.set_events(TOOL_ID, E.PY_START)
 """
                 elif debugger_mode == "t":
                     script = f"""
+from __future__ import annotations
 import sys
 def inner_handler(*args):
     pass
@@ -191,7 +193,10 @@ sys.settrace(handler)
 {script}
 """
                 elif debugger_mode == "":
-                    pass
+                    script = f"""
+from __future__ import annotations
+{script}
+"""
                 else:
                     raise BenchmarkException(f"invalid debugger mode {debugger_mode}")
             with open(new_script_file, "w") as f:
