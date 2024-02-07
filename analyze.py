@@ -41,7 +41,7 @@ class BenchmarkResults:
     def from_file(path: Path) -> 'BenchmarkResults':
         with open(path) as f:
             return BenchmarkResults.from_json(
-                path.stem.replace('.json', ''), json.load(f))
+                path.stem.replace('.json', '').replace('_', ' '), json.load(f))
 
     def get_benchmark(self, name: str) -> BenchmarkResult:
         return next(b for b in self.benchmarks if b.name == name)

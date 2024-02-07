@@ -51,7 +51,7 @@ to the beginning of the benchmark runner::
     sys.settrace(handler)
 
 
-For ``sys.monitoring`` (``DEBUGGER_MODE=m``), it adds
+For ``sys.monitoring`` (``DEBUGGER_MODE=m`` or ``DEBUGGER_MODE=m2``), it adds
 to the beginning of the benchmark runner::
 
     import sys
@@ -73,6 +73,8 @@ to the beginning of the benchmark runner::
     mon.register_callback(TOOL_ID, E.PY_START, start_handler)
     # enable PY_START event globally
     mon.set_events(TOOL_ID, E.PY_START)
+    # or for DEBUGGER_MODE=m2
+    # mon.set_events(TOOL_ID, E.PY_START | E.LINE)
 
 This might not always work (e.g. "2to3" benchmark), so compare
 the results with the baseline (``DEBUGGER_MODE=``) to check if
@@ -80,4 +82,11 @@ the debugger is enabled.
 
 Run all benchmarks via::
 
-    python3 dev.py run -o none.json; DEBUGGER_MODE="t" python3 dev.py run -o settrace.json; DEBUGGER_MODE="m" python3 dev.py run -o monitoring.json
+    python3 dev.py run -o none.json
+    DEBUGGER_MODE="t" python3 dev.py run -o settrace.json
+    DEBUGGER_MODE="m" python3 dev.py run -o monitoring.json
+    DEBUGGER_MODE="m2" python3 dev.py run -o monitoring2.json^
+
+Compare the results via::
+
+    python3 analyze.py baseline-file.json result-file.json ...

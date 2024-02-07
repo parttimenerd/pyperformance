@@ -178,6 +178,31 @@ mon.set_events(TOOL_ID, E.PY_START)
 
 {script}
 """
+                elif debugger_mode == "m2":
+                    script = f"""
+from __future__ import annotations
+import sys
+mon = sys.monitoring
+E = mon.events
+TOOL_ID = mon.DEBUGGER_ID
+
+def line_handler(*args):
+    pass
+
+def start_handler(*args):
+    pass
+
+
+# register the tool
+mon.use_tool_id(TOOL_ID, "dbg")
+# register callbacks for the events we are interested in
+mon.register_callback(TOOL_ID, E.LINE, line_handler)
+mon.register_callback(TOOL_ID, E.PY_START, start_handler)
+# enable PY_START and LINE events globally
+mon.set_events(TOOL_ID, E.PY_START | E.LINE)
+
+{script}
+                    """
                 elif debugger_mode == "t":
                     script = f"""
 from __future__ import annotations

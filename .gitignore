@@ -24,3 +24,6 @@ pyperformance/tests/data/cpython/
 
 # coverage
 .coverage
+
+# generated bench.py files
+pyperformance/data-files/benchmarks/*/bench.py
